@@ -110,6 +110,62 @@ def update_order(order_id):
 # Create the "orders" table before running the server
 create_orders_table()
 
+# Route for handling refund requests
+@app.route('/refundroute', methods=['POST'])
+def refund_route():
+    conn, c = get_db()
+
+    refund_data = request.get_json()
+
+    order_id = refund_data['id']
+    refund_amount = refund_data['ammount']
+    refund_reason = refund_data['reason']
+    refund_date = refund_data['date']
+
+    try:
+        # Update the status of the order to "pending refund print"
+        c.execute('UPDATE orders SET printing_status=?, refund_amount=?, refund_reason=?, refund_date=? WHERE id=?', ('pending refund print', refund_amount, refund_reason, refund_date, order_id))
+        conn.commit()
+
+        conn.close()
+        return "Refund request processed successfully"
+    except sqlite3.Error as e:
+        print(e)
+        return "Error processing refund request"
+# Route for retrieving orders pending refund for a specific venue
+
+@app.route('/orders/pending_refund/<venue>', methods=['GET'])
+def get_pending_refund_orders(venue):
+    conn, c = get_db()
+
+    # Query the database for orders with the specified venue and printing_status as "refund sent"
+    c.execute('SELECT * FROM orders WHERE venue=? AND printing_status=?', (venue, 'refund sent'))
+    refund_orders = c.fetchall()
+
+    # Prepare the refund order data to be sent as a JSON response
+    refund_order_data = []
+    for order in refund_orders:
+        order_dict = {
+            'name': order[1],
+            'price': order[2],
+            'quantity': order[3],
+            'isfood': order[4],
+            'Time': order[5],
+            'venue': order[6],
+            'total': order[7],
+            'refund_amount': order[8],
+            'refund_reason': order[9],
+            'refund_date': order[10],
+            'fiscal_id': order[11]  # Add the fiscal number to the response
+        }
+        refund_order_data.append(order_dict)
+
+    conn.close()
+
+    return jsonify(refund_order_data)
+
+
+
 # Run the Flask application
 if __name__ == '__main__':
     app.run()
