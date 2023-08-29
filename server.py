@@ -24,13 +24,17 @@ def create_orders_table():
             venue TEXT,
             total REAL,
             printing_status TEXT,
-            fiscal_id TEXT
+            fiscal_id TEXT,
+            refund_amount REAL,   -- Add this line to create the refund_amount column
+            refund_reason TEXT,   -- Add this line to create the refund_reason column
+            refund_date TEXT      -- Add this line to create the refund_date column
         )
     ''')
 
     conn.commit()  # Commit the changes to the database
 
     conn.close()  # Close the connection
+
 
 # Route for receiving and storing order data
 @app.route('/process-json', methods=['POST'])
@@ -118,13 +122,10 @@ def refund_route():
     refund_data = request.get_json()
 
     order_id = refund_data['id']
-    refund_amount = refund_data['ammount']
-    refund_reason = refund_data['reason']
-    refund_date = refund_data['date']
 
     try:
         # Update the status of the order to "pending refund print"
-        c.execute('UPDATE orders SET printing_status=?, refund_amount=?, refund_reason=?, refund_date=? WHERE id=?', ('pending refund print', refund_amount, refund_reason, refund_date, order_id))
+        c.execute('UPDATE orders SET printing_status=? WHERE id=?', ('pending refund print', order_id))
         conn.commit()
 
         conn.close()
@@ -132,20 +133,21 @@ def refund_route():
     except sqlite3.Error as e:
         print(e)
         return "Error processing refund request"
-# Route for retrieving orders pending refund for a specific venue
 
+# Route for retrieving orders pending refund for a specific venue
 @app.route('/orders/pending_refund/<venue>', methods=['GET'])
 def get_pending_refund_orders(venue):
     conn, c = get_db()
 
-    # Query the database for orders with the specified venue and printing_status as "refund sent"
-    c.execute('SELECT * FROM orders WHERE venue=? AND printing_status=?', (venue, 'refund sent'))
+    # Query the database for orders with the specified venue and printing_status as "pending refund print"
+    c.execute('SELECT * FROM orders WHERE venue=? AND printing_status=?', (venue, 'pending refund print'))
     refund_orders = c.fetchall()
 
     # Prepare the refund order data to be sent as a JSON response
     refund_order_data = []
     for order in refund_orders:
         order_dict = {
+            'id': order[0],  # Include the order ID in the response
             'name': order[1],
             'price': order[2],
             'quantity': order[3],
@@ -153,16 +155,19 @@ def get_pending_refund_orders(venue):
             'Time': order[5],
             'venue': order[6],
             'total': order[7],
-            'refund_amount': order[8],
-            'refund_reason': order[9],
-            'refund_date': order[10],
-            'fiscal_id': order[11]  # Add the fiscal number to the response
+            'fiscal_id': order[8]  # Modify the index to match the correct column
         }
         refund_order_data.append(order_dict)
+
+        # Update the printing_status to "refund sent" for the retrieved orders
+        c.execute('UPDATE orders SET printing_status=? WHERE id=?', ('refund sent', order[0]))
+        conn.commit()
 
     conn.close()
 
     return jsonify(refund_order_data)
+
+
 
 
 
