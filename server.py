@@ -51,13 +51,13 @@ def process_json():
     Time = order_data['Time']
     venue = order_data['venue']
     total = order_data['total']
-    order_id = order_data['id']
+    order_id = int(order_data['id'])
 
     # Insert the order into the database
     c.execute('''
-        INSERT INTO orders (name, price, quantity, isfood, Time, venue, total, printing_status, fiscal_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (name, price, quantity, isfood, Time, venue, total, 'new', ''))
+        INSERT INTO orders (name, price, quantity, isfood, Time, venue, total, printing_status, fiscal_id, id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (name, price, quantity, isfood, Time, venue, total, 'new', '', order_id))
 
     conn.commit()  # Commit the changes to the database
 
