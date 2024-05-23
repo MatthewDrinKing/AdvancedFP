@@ -88,8 +88,8 @@ def get_orders(venue):
             'isfood': order[4],
             'Time': order[5],
             'venue': order[6],
-            'total': order[7]
-            'status': order [8]
+            'total': order[7],
+            'status': order [8],
             'id' : order[10]
         }
         order_data.append(order_dict)
