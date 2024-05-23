@@ -90,7 +90,7 @@ def get_orders(venue):
             'venue': order[6],
             'total': order[7],
             'status': order [8],
-            'id' : order[10]
+            'id' : order[0]
         }
         order_data.append(order_dict)
 
